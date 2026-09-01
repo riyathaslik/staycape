@@ -296,26 +296,57 @@ function initReviewForm() {
   });
 }
 
-// ======================== Inject Settings ========================
 function injectSettings() {
   const s = scGetSettings();
 
-  document.querySelectorAll('[data-sc-phone1]').forEach(el => { el.textContent = s.phone1 || '+91 7034 378 660'; });
-  document.querySelectorAll('[data-sc-phone2]').forEach(el => { el.textContent = s.phone2 || '+91 9744 030 890'; });
-  document.querySelectorAll('[data-sc-email]').forEach(el => { el.textContent = s.email || 'staycapes@gmail.com'; el.href = 'mailto:' + (s.email || 'staycapes@gmail.com'); });
-  document.querySelectorAll('[data-sc-address]').forEach(el => { el.textContent = s.address || 'Kondotty, Kerala'; });
-  document.querySelectorAll('[data-sc-website]').forEach(el => { el.textContent = s.website || 'staycape.in'; });
+  document.querySelectorAll('[data-sc-phone1]').forEach(el => { 
+    el.textContent = s.phone1 || '+91 7034 378 660'; 
+  });
+  document.querySelectorAll('[data-sc-phone2]').forEach(el => { 
+    el.textContent = s.phone2 || '+91 9744 030 890'; 
+  });
+  document.querySelectorAll('[data-sc-email]').forEach(el => { 
+    el.textContent = s.email || 'staycapes@gmail.com'; 
+    el.href = 'mailto:' + (s.email || 'staycapes@gmail.com'); 
+  });
+  document.querySelectorAll('[data-sc-address]').forEach(el => { 
+    el.textContent = s.address || 'Kondotty, Kerala'; 
+  });
+  document.querySelectorAll('[data-sc-website]').forEach(el => { 
+    el.textContent = s.website || 'staycape.in'; 
+  });
 
-  // WhatsApp float & buttons
+  // WhatsApp - Primary Number
   const msg = encodeURIComponent('Hello Staycape, I am interested in your travel packages. Please share more details.');
   const wa = s.whatsapp || '917034378660';
-  document.querySelectorAll('[data-sc-wa]').forEach(el => { el.href = `https://wa.me/${wa}?text=${msg}`; });
+  document.querySelectorAll('[data-sc-wa]').forEach(el => { 
+    el.href = `https://wa.me/${wa}?text=${msg}`; 
+  });
+
+  // WhatsApp - Secondary Number (for specific buttons)
+  const wa2 = s.whatsapp2 || '919744030890';
+  document.querySelectorAll('[data-sc-wa2]').forEach(el => { 
+    el.href = `https://wa.me/${wa2}?text=${msg}`; 
+  });
 
   // Social
-  if (s.instagram) document.querySelectorAll('[data-sc-instagram]').forEach(el => { el.href = s.instagram; el.style.display = 'flex'; });
-  else document.querySelectorAll('[data-sc-instagram]').forEach(el => el.style.display = 'none');
-  if (s.facebook) document.querySelectorAll('[data-sc-facebook]').forEach(el => { el.href = s.facebook; el.style.display = 'flex'; });
-  else document.querySelectorAll('[data-sc-facebook]').forEach(el => el.style.display = 'none');
+  if (s.instagram) {
+    document.querySelectorAll('[data-sc-instagram]').forEach(el => { 
+      el.href = s.instagram; 
+      el.style.display = 'flex'; 
+    });
+  } else {
+    document.querySelectorAll('[data-sc-instagram]').forEach(el => el.style.display = 'none');
+  }
+  
+  if (s.facebook) {
+    document.querySelectorAll('[data-sc-facebook]').forEach(el => { 
+      el.href = s.facebook; 
+      el.style.display = 'flex'; 
+    });
+  } else {
+    document.querySelectorAll('[data-sc-facebook]').forEach(el => el.style.display = 'none');
+  }
 }
 
 // ======================== Toast ========================
@@ -346,7 +377,109 @@ function initSmoothScroll() {
     });
   });
 }
+// ======================== Update Stats ========================
+function updateStats() {
+  const packages = scGetPackages().filter(p => p.active);
+  const testimonials = scGetTestimonials().filter(t => t.active);
+  
+  // 1. Happy Travellers - Count from actual data
+  // Each testimonial represents a real traveller
+  // Plus a base number from offline bookings (you can adjust this)
+  const offlineBookings = 128; // Base from your records
+  const happyTravellers = testimonials.length + offlineBookings;
+  
+  // 2. Destinations - Count unique destinations from packages
+  const uniqueDestinations = new Set(packages.map(p => p.name));
+  const destinationCount = uniqueDestinations.size;
+  
+  // 3. Services Offered - Count active services
+  const serviceList = [
+    'Flight Booking',
+    'Train Booking', 
+    'Bus Booking',
+    'Hotel Booking',
+    'Visa Consultant',
+    'Job Hunting',
+    'Travel Insurance',
+    'Domestic Tours',
+    'International Tours',
+    'Health Tourism'
+  ];
+  const servicesOffered = serviceList.length;
+  
+  // 4. Client Satisfaction - Calculate average rating
+  let avgRating = 0;
+  let totalReviews = 0;
+  
+  if (testimonials.length > 0) {
+    const totalRating = testimonials.reduce((sum, t) => sum + t.rating, 0);
+    avgRating = totalRating / testimonials.length;
+    totalReviews = testimonials.length;
+  }
+  
+  // Update stats with animation
+  animateNumber('statTravellers', happyTravellers);
+  animateNumber('statDestinations', destinationCount);
+  animateNumber('statServices', servicesOffered);
+  animateRating('statRating', avgRating);
+}
 
+// ======================== Animate Number ========================
+function animateNumber(elementId, target) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  
+  let current = 0;
+  const steps = 30;
+  const increment = Math.ceil(target / steps);
+  const duration = 800;
+  const stepTime = duration / steps;
+  let step = 0;
+  
+  // If target is 0, just show 0
+  if (target === 0) {
+    el.textContent = '0';
+    return;
+  }
+  
+  const timer = setInterval(() => {
+    step++;
+    current += increment;
+    if (step >= steps || current >= target) {
+      current = target;
+      clearInterval(timer);
+    }
+    el.textContent = current;
+  }, stepTime);
+}
+
+// ======================== Animate Rating ========================
+function animateRating(elementId, target) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  
+  if (target === 0) {
+    el.textContent = '0★';
+    return;
+  }
+  
+  let current = 0;
+  const duration = 800;
+  const steps = 30;
+  const increment = target / steps;
+  let step = 0;
+  
+  const timer = setInterval(() => {
+    step++;
+    current += increment;
+    if (step >= steps) {
+      current = target;
+      clearInterval(timer);
+    }
+    // Show 1 decimal place
+    el.textContent = current.toFixed(1) + '★';
+  }, duration / steps);
+}
 // ======================== INIT ========================
 document.addEventListener('DOMContentLoaded', () => {
   initNavbar();
@@ -357,4 +490,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initReviewForm();
   injectSettings();
   initSmoothScroll();
+  updateStats(); // Dynamic stats
 });

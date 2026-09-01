@@ -8,15 +8,17 @@ const STAYCAPE_DEFAULTS = {
 
   settings: {
     whatsapp: '917034378660',
+    whatsapp2: '919744030890',  // ADD THIS
     phone1: '+91 7034 378 660',
     phone2: '+91 9744 030 890',
     email: 'staycapes@gmail.com',
     address: 'Kondotty, Kerala',
     website: 'staycape.in',
-    instagram: '',
+    instagram: 'https://www.instagram.com/staycape_',
     facebook: '',
     adminPassword: 'Staycape@2024'
   },
+
 
   packages: [
     {
