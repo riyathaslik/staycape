@@ -1,6 +1,6 @@
-// ====================================================
+// ============================================================
 // STAYCAPE TRAVEL COMPANY — Main JavaScript
-// ====================================================
+// ============================================================
 
 // ======================== Navbar ========================
 function initNavbar() {
@@ -34,7 +34,6 @@ function initNavbar() {
         document.body.style.overflow = '';
       });
     });
-    // Close on outside click
     document.addEventListener('click', e => {
       if (!hamburger.contains(e.target) && !mobileMenu.contains(e.target)) {
         hamburger.classList.remove('open');
@@ -44,7 +43,6 @@ function initNavbar() {
     });
   }
 
-  // Active link
   const path = window.location.pathname;
   document.querySelectorAll('.navbar-nav a, .nav-mobile a[href]').forEach(a => {
     const href = a.getAttribute('href');
@@ -62,7 +60,7 @@ function initScrollAnim() {
     entries.forEach(e => {
       if (e.isIntersecting) {
         e.target.classList.add('visible');
-        io.unobserve(e.target); // only trigger once
+        io.unobserve(e.target);
       }
     });
   }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
@@ -71,13 +69,14 @@ function initScrollAnim() {
 }
 
 // ======================== Packages Section ========================
-function initPackages() {
+async function initPackages() {
   const grid = document.getElementById('packages-grid');
   const tabs = document.querySelectorAll('.pkg-tab');
   if (!grid) return;
 
-  const allPkgs = scGetPackages().filter(p => p.active);
-  const settings = scGetSettings();
+  const allPkgs = await scGetPackages();
+  const activePkgs = allPkgs.filter(p => p.active);
+  const settings = await scGetSettings();
   let currentFilter = 'all';
 
   function getBadgeClass(bc) {
@@ -119,9 +118,9 @@ function initPackages() {
   }
 
   function render(filter) {
-    let filtered = filter === 'all' ? allPkgs
-      : filter === 'featured' ? allPkgs.filter(p => p.featured)
-      : allPkgs.filter(p => p.type === filter);
+    let filtered = filter === 'all' ? activePkgs
+      : filter === 'featured' ? activePkgs.filter(p => p.featured)
+      : activePkgs.filter(p => p.type === filter);
 
     grid.innerHTML = filtered.length
       ? filtered.map(buildCard).join('')
@@ -159,7 +158,6 @@ function initDestinations() {
     { name: 'Africa',     img: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=400&h=550&fit=crop&q=80' },
   ];
 
-  // Duplicate for seamless loop
   const all = [...dests, ...dests];
   track.innerHTML = all.map(d => `
     <div class="dest-card">
@@ -173,15 +171,17 @@ function initDestinations() {
 }
 
 // ======================== Testimonials Carousel ========================
-function initTestimonials() {
+async function initTestimonials() {
   const track = document.querySelector('.t-track');
   const dotsWrap = document.querySelector('.t-dots');
   const prevBtn = document.querySelector('.t-prev');
   const nextBtn = document.querySelector('.t-next');
   if (!track) return;
 
-  const testimonials = scGetTestimonials().filter(t => t.active);
-  if (!testimonials.length) {
+  const testimonials = await scGetTestimonials();
+  const activeTests = testimonials.filter(t => t.active);
+  
+  if (!activeTests.length) {
     document.querySelector('.testimonials-section')?.remove();
     return;
   }
@@ -192,8 +192,7 @@ function initTestimonials() {
   function stars(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
   function initial(name) { return name ? name.charAt(0).toUpperCase() : '?'; }
 
-  // Render slides
-  track.innerHTML = testimonials.map(t => `
+  track.innerHTML = activeTests.map(t => `
     <div class="t-slide">
       <div class="t-card">
         ${t.photo
@@ -208,9 +207,8 @@ function initTestimonials() {
     </div>`
   ).join('');
 
-  // Render dots
   if (dotsWrap) {
-    dotsWrap.innerHTML = testimonials.map((_, i) =>
+    dotsWrap.innerHTML = activeTests.map((_, i) =>
       `<div class="t-dot ${i === 0 ? 'active' : ''}" data-idx="${i}" role="button" aria-label="Go to testimonial ${i+1}"></div>`
     ).join('');
     dotsWrap.querySelectorAll('.t-dot').forEach(d =>
@@ -219,7 +217,7 @@ function initTestimonials() {
   }
 
   function goTo(idx) {
-    current = (idx + testimonials.length) % testimonials.length;
+    current = (idx + activeTests.length) % activeTests.length;
     track.style.transform = `translateX(-${current * 100}%)`;
     dotsWrap?.querySelectorAll('.t-dot').forEach((d, i) => d.classList.toggle('active', i === current));
   }
@@ -230,7 +228,6 @@ function initTestimonials() {
   if (prevBtn) prevBtn.addEventListener('click', () => { stopAuto(); goTo(current - 1); startAuto(); });
   if (nextBtn) nextBtn.addEventListener('click', () => { stopAuto(); goTo(current + 1); startAuto(); });
 
-  // Touch / swipe
   let touchX = 0;
   track.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; stopAuto(); }, { passive: true });
   track.addEventListener('touchend', e => {
@@ -267,7 +264,7 @@ function initReviewForm() {
     });
   });
 
-  form.addEventListener('submit', e => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!selectedRating) { scToast('Please select a star rating.', 'warning'); return; }
 
@@ -278,26 +275,25 @@ function initReviewForm() {
 
     if (!name || !dest || !review) { scToast('Please fill in all required fields.', 'warning'); return; }
 
-    const entry = {
-      id: Date.now(), name, contact, destination: dest,
-      rating: selectedRating, review,
-      date: new Date().toISOString().split('T')[0],
-      status: 'pending', photo: ''
-    };
+    const result = await scSubmitReview({
+      name, contact, destination: dest,
+      rating: selectedRating, review
+    });
 
-    const pending = scGetPendingReviews();
-    pending.push(entry);
-    localStorage.setItem('staycape_reviews_pending', JSON.stringify(pending));
-
-    scToast('Thank you! Your review is pending admin approval.', 'success');
-    form.reset();
-    selectedRating = 0;
-    starBtns.forEach(s => { s.textContent = '☆'; s.style.color = '#D1D5DB'; });
+    if (result.success) {
+      scToast('Thank you! Your review is pending admin approval.', 'success');
+      form.reset();
+      selectedRating = 0;
+      starBtns.forEach(s => { s.textContent = '☆'; s.style.color = '#D1D5DB'; });
+    } else {
+      scToast('Error submitting review. Please try again.', 'warning');
+    }
   });
 }
 
-function injectSettings() {
-  const s = scGetSettings();
+// ======================== Inject Settings ========================
+async function injectSettings() {
+  const s = await scGetSettings();
 
   document.querySelectorAll('[data-sc-phone1]').forEach(el => { 
     el.textContent = s.phone1 || '+91 7034 378 660'; 
@@ -316,27 +312,17 @@ function injectSettings() {
     el.textContent = s.website || 'staycape.in'; 
   });
 
-  // WhatsApp - Primary Number
   const msg = encodeURIComponent('Hello Staycape, I am interested in your travel packages. Please share more details.');
   const wa = s.whatsapp || '917034378660';
   document.querySelectorAll('[data-sc-wa]').forEach(el => { 
     el.href = `https://wa.me/${wa}?text=${msg}`; 
   });
 
-  // WhatsApp - Secondary Number (for specific buttons)
-  const wa2 = s.whatsapp2 || '919744030890';
-  document.querySelectorAll('[data-sc-wa2]').forEach(el => { 
-    el.href = `https://wa.me/${wa2}?text=${msg}`; 
-  });
-
-  // Social
   if (s.instagram) {
     document.querySelectorAll('[data-sc-instagram]').forEach(el => { 
       el.href = s.instagram; 
       el.style.display = 'flex'; 
     });
-  } else {
-    document.querySelectorAll('[data-sc-instagram]').forEach(el => el.style.display = 'none');
   }
   
   if (s.facebook) {
@@ -344,8 +330,6 @@ function injectSettings() {
       el.href = s.facebook; 
       el.style.display = 'flex'; 
     });
-  } else {
-    document.querySelectorAll('[data-sc-facebook]').forEach(el => el.style.display = 'none');
   }
 }
 
@@ -377,118 +361,94 @@ function initSmoothScroll() {
     });
   });
 }
+
 // ======================== Update Stats ========================
-function updateStats() {
-  const packages = scGetPackages().filter(p => p.active);
-  const testimonials = scGetTestimonials().filter(t => t.active);
-  
-  // 1. Happy Travellers - Count from actual data
-  // Each testimonial represents a real traveller
-  // Plus a base number from offline bookings (you can adjust this)
-  const offlineBookings = 128; // Base from your records
-  const happyTravellers = testimonials.length + offlineBookings;
-  
-  // 2. Destinations - Count unique destinations from packages
-  const uniqueDestinations = new Set(packages.map(p => p.name));
-  const destinationCount = uniqueDestinations.size;
-  
-  // 3. Services Offered - Count active services
-  const serviceList = [
-    'Flight Booking',
-    'Train Booking', 
-    'Bus Booking',
-    'Hotel Booking',
-    'Visa Consultant',
-    'Job Hunting',
-    'Travel Insurance',
-    'Domestic Tours',
-    'International Tours',
-    'Health Tourism'
-  ];
-  const servicesOffered = serviceList.length;
-  
-  // 4. Client Satisfaction - Calculate average rating
-  let avgRating = 0;
-  let totalReviews = 0;
-  
-  if (testimonials.length > 0) {
-    const totalRating = testimonials.reduce((sum, t) => sum + t.rating, 0);
-    avgRating = totalRating / testimonials.length;
-    totalReviews = testimonials.length;
-  }
-  
-  // Update stats with animation
-  animateNumber('statTravellers', happyTravellers);
-  animateNumber('statDestinations', destinationCount);
-  animateNumber('statServices', servicesOffered);
-  animateRating('statRating', avgRating);
+async function updateStats() {
+    try {
+        const stats = await scGetStats();
+        
+        const happyTravellers = stats.happy_travellers || 0;
+        const destinations = stats.destinations || 0;
+        const servicesOffered = stats.services_offered || 10;
+        const avgRating = stats.avg_rating || 0;
+        
+        animateNumber('statTravellers', happyTravellers);
+        animateNumber('statDestinations', destinations);
+        animateNumber('statServices', servicesOffered);
+        animateRating('statRating', avgRating);
+    } catch (error) {
+        console.error('Error updating stats:', error);
+        // Fallback values
+        animateNumber('statTravellers', 131);
+        animateNumber('statDestinations', 10);
+        animateNumber('statServices', 10);
+        animateRating('statRating', 5.0);
+    }
 }
 
-// ======================== Animate Number ========================
 function animateNumber(elementId, target) {
-  const el = document.getElementById(elementId);
-  if (!el) return;
-  
-  let current = 0;
-  const steps = 30;
-  const increment = Math.ceil(target / steps);
-  const duration = 800;
-  const stepTime = duration / steps;
-  let step = 0;
-  
-  // If target is 0, just show 0
-  if (target === 0) {
-    el.textContent = '0';
-    return;
-  }
-  
-  const timer = setInterval(() => {
-    step++;
-    current += increment;
-    if (step >= steps || current >= target) {
-      current = target;
-      clearInterval(timer);
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    
+    let current = 0;
+    const steps = 30;
+    const increment = Math.ceil(target / steps);
+    const duration = 800;
+    const stepTime = duration / steps;
+    let step = 0;
+    
+    if (target === 0) {
+        el.textContent = '0';
+        return;
     }
-    el.textContent = current;
-  }, stepTime);
+    
+    const timer = setInterval(() => {
+        step++;
+        current += increment;
+        if (step >= steps || current >= target) {
+            current = target;
+            clearInterval(timer);
+        }
+        el.textContent = current;
+    }, stepTime);
 }
 
-// ======================== Animate Rating ========================
 function animateRating(elementId, target) {
-  const el = document.getElementById(elementId);
-  if (!el) return;
-  
-  if (target === 0) {
-    el.textContent = '0★';
-    return;
-  }
-  
-  let current = 0;
-  const duration = 800;
-  const steps = 30;
-  const increment = target / steps;
-  let step = 0;
-  
-  const timer = setInterval(() => {
-    step++;
-    current += increment;
-    if (step >= steps) {
-      current = target;
-      clearInterval(timer);
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    
+    if (target === 0) {
+        el.textContent = '0★';
+        return;
     }
-    // Show 1 decimal place
-    el.textContent = current.toFixed(1) + '★';
-  }, duration / steps);
+    
+    let current = 0;
+    const duration = 800;
+    const steps = 30;
+    const increment = target / steps;
+    let step = 0;
+    
+    const timer = setInterval(() => {
+        step++;
+        current += increment;
+        if (step >= steps) {
+            current = target;
+            clearInterval(timer);
+        }
+        el.textContent = current.toFixed(1) + '★';
+    }, duration / steps);
 }
+
 // ======================== INIT ========================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initNavbar();
   initScrollAnim();
-  initPackages();
+  await initPackages();
   initDestinations();
-  initTestimonials();
+  await initTestimonials();
   initReviewForm();
-  injectSettings();
+  await injectSettings();
   initSmoothScroll();
-  updateStats(); // Dynamic stats
+  await updateStats();
+  await scUpdateStats(); // Update stats if needed
 });

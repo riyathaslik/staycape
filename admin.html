@@ -13,7 +13,6 @@
     
     .admin-wrapper { max-width: 1400px; margin: 0 auto; padding: 20px; }
     
-    /* Login */
     .login-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.7);
@@ -54,7 +53,6 @@
     }
     .login-box button:hover { background: #0A5F2F; }
 
-    /* Header - Same style as footer brand */
     .admin-header {
       background: #0D7C3E;
       color: #fff;
@@ -115,7 +113,6 @@
       transform: translateY(-2px);
     }
 
-    /* Stats */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -132,7 +129,6 @@
     .stat-card .number { font-size: 2rem; font-weight: 800; color: #0D7C3E; }
     .stat-card .label { font-size: 0.85rem; color: #718096; margin-top: 4px; }
 
-    /* Tabs */
     .tabs {
       display: flex;
       gap: 4px;
@@ -169,7 +165,6 @@
     }
     .tab.active .badge { background: rgba(255,255,255,0.2); color: #fff; }
 
-    /* Panels */
     .panel { display: none; background: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
     .panel.active { display: block; }
 
@@ -208,7 +203,6 @@
     .btn-danger:hover { background: #b91c1c; }
     .btn-sm { padding: 6px 14px; font-size: 0.8rem; }
 
-    /* Tables */
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
     th { text-align: left; padding: 12px 12px; background: #f7fafc; font-weight: 600; color: #2d3748; border-bottom: 2px solid #e2e8f0; }
@@ -223,8 +217,8 @@
     }
     .status-badge.active { background: #d1fae5; color: #065f46; }
     .status-badge.inactive { background: #fee2e2; color: #991b1b; }
+    .status-badge.pending { background: #fef3c7; color: #92400e; }
 
-    /* Modal */
     .modal-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.5);
@@ -285,9 +279,34 @@
       max-width: 400px;
     }
     .toast.error { background: #dc2626; }
+    .toast.loading { background: #3B82F6; }
 
     .empty-state { text-align: center; padding: 40px 20px; color: #718096; }
     .empty-state i { font-size: 3rem; opacity: 0.3; margin-bottom: 12px; }
+
+    .pkg-info-notice {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #065f46;
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+    }
+    .pkg-info-notice i {
+      font-size: 1.4rem;
+      color: #0D7C3E;
+    }
+    .pkg-info-notice code {
+      background: #d1fae5;
+      padding: 2px 10px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: #0D7C3E;
+    }
 
     @media (max-width: 768px) {
       .form-row { grid-template-columns: 1fr; }
@@ -314,14 +333,13 @@
 <!-- Admin -->
 <div id="adminApp" style="display:none;">
 
-  <!-- Header - Same style as footer brand -->
   <div class="admin-wrapper">
     <header class="admin-header">
       <a class="brand-wrap" href="index.html">
         <img src="images/logo.png" alt="Staycape Travel Company" class="brand-logo" style="height:56px; width:auto; filter: drop-shadow(0 0 4px rgba(255,255,255,0.5));">
         <span class="brand-text">
-          <!-- <span class="brand-name">Staycape</span> -->
-          <span class="brand-name">Admin Panel</span>
+          <span class="brand-name">Staycape</span>
+          <span class="brand-sub">Admin Panel</span>
         </span>
       </a>
       <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
@@ -361,10 +379,17 @@
       </div>
     </div>
 
-    <!-- Packages Panel -->
+    <!-- Packages Panel - View Only -->
     <div class="panel" id="panel-packages">
+      <div class="pkg-info-notice">
+        <i class="fas fa-code"></i>
+        <div>
+          <strong>Packages are managed in code.</strong> 
+          To add or modify packages, edit the <code>PACKAGES_DATA</code> array in <code>js/data.js</code> file.
+        </div>
+      </div>
       <div class="panel-header">
-        <button class="btn-primary" onclick="openAddPackage()"><i class="fas fa-plus"></i> Add Package</button>
+        <span style="color:var(--text-muted);font-size:0.9rem;"><i class="fas fa-info-circle"></i> View only — packages are hardcoded</span>
         <input type="text" id="pkgSearch" placeholder="Search packages..." oninput="renderPackages()">
       </div>
       <div class="table-wrap">
@@ -377,7 +402,6 @@
               <th>Price</th>
               <th>Duration</th>
               <th>Status</th>
-              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="pkgTableBody"></tbody>
@@ -470,67 +494,66 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
 <script>
 // ============================================================
-// ADMIN PANEL - Complete Management
+// ADMIN PANEL - Complete Working Version
 // ============================================================
 
-const STORAGE_KEYS = {
-  settings: 'staycape_settings',
-  packages: 'staycape_packages',
-  testimonials: 'staycape_testimonials',
-  reviews: 'staycape_reviews_pending'
-};
+let currentAdminPassword = 'Staycape@2024';
 
-// ---------- Helpers ----------
-function getData(key) {
-  try { return JSON.parse(localStorage.getItem(key)) || null; }
-  catch { return null; }
-}
-function setData(key, val) {
-  localStorage.setItem(key, JSON.stringify(val));
-}
-
-function getDefaults() {
-  return {
-    settings: {
-      whatsapp: '+91 7034378660',
-      phone1: '+91 7034 378 660',
-      phone2: '+91 9744 030 890',
-      email: 'staycapes@gmail.com',
-      address: 'Kondotty, Kerala',
-      website: 'staycape.in',
-      instagram: '',
-      facebook: '',
-      adminPassword: 'Staycape@2024'
-    },
-    packages: [],
-    testimonials: [],
-    reviews: []
-  };
+// ---------- Auth ----------
+function checkAuth() {
+  const pass = sessionStorage.getItem('staycape_admin');
+  if (pass && pass === currentAdminPassword) {
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('adminApp').style.display = 'block';
+    initAdmin();
+    return true;
+  }
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('adminApp').style.display = 'none';
+  return false;
 }
 
-function loadAll() {
-  const def = getDefaults();
-  return {
-    settings: getData(STORAGE_KEYS.settings) || def.settings,
-    packages: getData(STORAGE_KEYS.packages) || def.packages,
-    testimonials: getData(STORAGE_KEYS.testimonials) || def.testimonials,
-    reviews: getData(STORAGE_KEYS.reviews) || def.reviews
-  };
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('adminPass').value;
+  
+  try {
+    const settings = await scGetSettings();
+    const pass = settings.adminPassword || 'Staycape@2024';
+    currentAdminPassword = pass;
+    
+    if (input === pass) {
+      sessionStorage.setItem('staycape_admin', pass);
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('adminApp').style.display = 'block';
+      initAdmin();
+    } else {
+      toast('Incorrect password!', true);
+    }
+  } catch (error) {
+    toast('Error connecting to database. Using default password.', true);
+    const pass = 'Staycape@2024';
+    if (input === pass) {
+      sessionStorage.setItem('staycape_admin', pass);
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('adminApp').style.display = 'block';
+      initAdmin();
+    } else {
+      toast('Incorrect password!', true);
+    }
+  }
+});
+
+function logout() {
+  sessionStorage.removeItem('staycape_admin');
+  location.reload();
 }
 
-function saveAll(data) {
-  setData(STORAGE_KEYS.settings, data.settings);
-  setData(STORAGE_KEYS.packages, data.packages);
-  setData(STORAGE_KEYS.testimonials, data.testimonials);
-  setData(STORAGE_KEYS.reviews, data.reviews);
-}
-
-function nextId(arr) {
-  return arr.length ? Math.max(...arr.map(i => i.id || 0)) + 1 : 1;
-}
-
+// ---------- Toast ----------
 function toast(msg, error = false) {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -540,139 +563,124 @@ function toast(msg, error = false) {
   el._timer = setTimeout(() => { el.style.display = 'none'; }, 3500);
 }
 
-// ---------- Auth ----------
-function checkAuth() {
-  const settings = getData(STORAGE_KEYS.settings) || getDefaults().settings;
-  const pass = settings.adminPassword || 'Staycape@2024';
-  if (sessionStorage.getItem('staycape_admin') === pass) return true;
-  document.getElementById('loginOverlay').style.display = 'flex';
-  document.getElementById('adminApp').style.display = 'none';
-  return false;
-}
-
-document.getElementById('loginForm').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const settings = getData(STORAGE_KEYS.settings) || getDefaults().settings;
-  const pass = settings.adminPassword || 'Staycape@2024';
-  const input = document.getElementById('adminPass').value;
-  if (input === pass) {
-    sessionStorage.setItem('staycape_admin', pass);
-    document.getElementById('loginOverlay').style.display = 'none';
-    document.getElementById('adminApp').style.display = 'block';
-    initAdmin();
-  } else {
-    toast('Incorrect password!', true);
+// ---------- Render Stats ----------
+async function renderStats() {
+  try {
+    const [packages, testimonials, reviews] = await Promise.all([
+      scGetPackages(),
+      scGetTestimonials(),
+      scGetPendingReviews()
+    ]);
+    
+    const pkgData = packages || [];
+    const testData = testimonials || [];
+    const reviewData = reviews || [];
+    
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="number">${testData.filter(t => t.active).length}</div><div class="label">Happy Clients</div></div>
+      <div class="stat-card"><div class="number">${pkgData.length}</div><div class="label">Total Packages</div></div>
+      <div class="stat-card"><div class="number">${pkgData.filter(p => p.active).length}</div><div class="label">Active Packages</div></div>
+      <div class="stat-card"><div class="number">${reviewData.length}</div><div class="label">Pending Reviews</div></div>
+    `;
+    document.getElementById('testCount').textContent = testData.filter(t => t.active).length;
+    document.getElementById('pkgCount').textContent = pkgData.length;
+    document.getElementById('reviewCount').textContent = reviewData.length;
+  } catch (error) {
+    console.error('Error rendering stats:', error);
   }
-});
-
-function logout() {
-  sessionStorage.removeItem('staycape_admin');
-  location.reload();
 }
 
-// ---------- Render ----------
-function renderStats(data) {
-  document.getElementById('statsGrid').innerHTML = `
-    <div class="stat-card"><div class="number">${data.testimonials.filter(t => t.active).length}</div><div class="label">Happy Clients</div></div>
-    <div class="stat-card"><div class="number">${data.packages.length}</div><div class="label">Total Packages</div></div>
-    <div class="stat-card"><div class="number">${data.packages.filter(p => p.active).length}</div><div class="label">Active Packages</div></div>
-    <div class="stat-card"><div class="number">${data.reviews.length}</div><div class="label">Pending Reviews</div></div>
-  `;
-  document.getElementById('testCount').textContent = data.testimonials.filter(t => t.active).length;
-  document.getElementById('pkgCount').textContent = data.packages.length;
-  document.getElementById('reviewCount').textContent = data.reviews.length;
-}
-
-function renderTestimonials() {
-  const data = loadAll();
-  const tbody = document.getElementById('testTableBody');
-  const items = data.testimonials;
-  if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-users"></i><p>No happy clients yet. Add your first testimonial!</p></div></td></tr>`;
-    return;
+// ---------- Render Testimonials ----------
+async function renderTestimonials() {
+  try {
+    const data = await scGetTestimonials();
+    const items = data || [];
+    const tbody = document.getElementById('testTableBody');
+    
+    if (!items.length) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-users"></i><p>No happy clients yet. Add your first testimonial!</p></div></td></tr>`;
+      return;
+    }
+    
+    tbody.innerHTML = items.map(t => `
+      <tr>
+        <td>${t.photo ? `<img src="${t.photo}" class="img-thumb">` : `<div style="width:50px;height:50px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-weight:700;color:#0D7C3E;">${t.name.charAt(0)}</div>`}</td>
+        <td><strong>${t.name}</strong></td>
+        <td>${t.destination}</td>
+        <td>${'★'.repeat(t.rating)}${'☆'.repeat(5-t.rating)}</td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.review}</td>
+        <td><span class="status-badge ${t.active ? 'active' : 'inactive'}">${t.active ? 'Active' : 'Hidden'}</span></td>
+        <td>
+          <button class="btn-primary btn-sm" onclick="editTestimonial(${t.id})"><i class="fas fa-edit"></i></button>
+          <button class="btn-danger btn-sm" onclick="deleteTestimonial(${t.id})"><i class="fas fa-trash"></i></button>
+          <button class="btn-sm" onclick="toggleTestimonial(${t.id})" style="background:${t.active ? '#fee2e2' : '#d1fae5'};color:${t.active ? '#991b1b' : '#065f46'};border:none;padding:6px 12px;border-radius:6px;cursor:pointer;">
+            ${t.active ? 'Hide' : 'Show'}
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (error) {
+    console.error('Error rendering testimonials:', error);
   }
-  tbody.innerHTML = items.map(t => `
-    <tr>
-      <td>${t.photo ? `<img src="${t.photo}" class="img-thumb">` : `<div style="width:50px;height:50px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-weight:700;color:#0D7C3E;">${t.name.charAt(0)}</div>`}</td>
-      <td><strong>${t.name}</strong></td>
-      <td>${t.destination}</td>
-      <td>${'★'.repeat(t.rating)}${'☆'.repeat(5-t.rating)}</td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.review}</td>
-      <td><span class="status-badge ${t.active ? 'active' : 'inactive'}">${t.active ? 'Active' : 'Hidden'}</span></td>
-      <td>
-        <button class="btn-primary btn-sm" onclick="editTestimonial(${t.id})"><i class="fas fa-edit"></i></button>
-        <button class="btn-danger btn-sm" onclick="deleteTestimonial(${t.id})"><i class="fas fa-trash"></i></button>
-        <button class="btn-sm" onclick="toggleTestimonial(${t.id})" style="background:${t.active ? '#fee2e2' : '#d1fae5'};color:${t.active ? '#991b1b' : '#065f46'};border:none;padding:6px 12px;border-radius:6px;cursor:pointer;">
-          ${t.active ? 'Hide' : 'Show'}
-        </button>
-      </td>
-    </tr>
-  `).join('');
 }
 
-function renderPackages() {
-  const data = loadAll();
-  const search = document.getElementById('pkgSearch').value.toLowerCase();
-  const filtered = data.packages.filter(p => p.name.toLowerCase().includes(search));
-  const tbody = document.getElementById('pkgTableBody');
-  if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-box-open"></i><p>No packages found.</p></div></td></tr>`;
-    return;
+// ---------- Render Packages ----------
+async function renderPackages() {
+  try {
+    const data = await scGetPackages();
+    const items = data || [];
+    const search = document.getElementById('pkgSearch').value.toLowerCase();
+    const filtered = items.filter(p => p.name.toLowerCase().includes(search));
+    const tbody = document.getElementById('pkgTableBody');
+    
+    if (!filtered.length) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-box-open"></i><p>No packages found.</p></div></td></tr>`;
+      return;
+    }
+    
+    tbody.innerHTML = filtered.map(p => `
+      <tr>
+        <td><img src="${p.image}" class="img-thumb" onerror="this.src='images/logo.png'"></td>
+        <td><strong>${p.name}</strong></td>
+        <td><span style="text-transform:capitalize">${p.type}</span></td>
+        <td>₹${p.price.toLocaleString('en-IN')}</td>
+        <td>${p.nights}N / ${p.days}D</td>
+        <td><span class="status-badge ${p.active ? 'active' : 'inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
+      </tr>
+    `).join('');
+  } catch (error) {
+    console.error('Error rendering packages:', error);
   }
-  tbody.innerHTML = filtered.map(p => `
-    <tr>
-      <td><img src="${p.image}" class="img-thumb" onerror="this.src='images/logo.png'"></td>
-      <td><strong>${p.name}</strong></td>
-      <td><span style="text-transform:capitalize">${p.type}</span></td>
-      <td>₹${p.price.toLocaleString('en-IN')}</td>
-      <td>${p.nights}N / ${p.days}D</td>
-      <td><span class="status-badge ${p.active ? 'active' : 'inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
-      <td>
-        <button class="btn-primary btn-sm" onclick="editPackage(${p.id})"><i class="fas fa-edit"></i></button>
-        <button class="btn-danger btn-sm" onclick="deletePackage(${p.id})"><i class="fas fa-trash"></i></button>
-        <button onclick="togglePackage(${p.id})" style="background:${p.active ? '#fee2e2' : '#d1fae5'};color:${p.active ? '#991b1b' : '#065f46'};border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem;">
-          ${p.active ? 'Disable' : 'Enable'}
-        </button>
-      </td>
-    </tr>
-  `).join('');
 }
 
-function renderPendingReviews() {
-  const data = loadAll();
-  const tbody = document.getElementById('reviewTableBody');
-  const items = data.reviews;
-  if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-check-circle"></i><p>No pending reviews. All clear!</p></div></td></tr>`;
-    return;
+// ---------- Render Pending Reviews ----------
+async function renderPendingReviews() {
+  try {
+    const data = await scGetPendingReviews();
+    const items = data || [];
+    const tbody = document.getElementById('reviewTableBody');
+    
+    if (!items.length) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-check-circle"></i><p>No pending reviews. All clear!</p></div></td></tr>`;
+      return;
+    }
+    
+    tbody.innerHTML = items.map(r => `
+      <tr>
+        <td><strong>${r.name}</strong></td>
+        <td>${r.destination}</td>
+        <td>${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.review}</td>
+        <td>${r.created_at ? new Date(r.created_at).toLocaleDateString() : 'N/A'}</td>
+        <td>
+          <button class="btn-primary btn-sm" onclick="approveReview(${r.id})"><i class="fas fa-check"></i> Approve</button>
+          <button class="btn-danger btn-sm" onclick="rejectReview(${r.id})"><i class="fas fa-times"></i></button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (error) {
+    console.error('Error rendering reviews:', error);
   }
-  tbody.innerHTML = items.map(r => `
-    <tr>
-      <td><strong>${r.name}</strong></td>
-      <td>${r.destination}</td>
-      <td>${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.review}</td>
-      <td>${r.date || 'N/A'}</td>
-      <td>
-        <button class="btn-primary btn-sm" onclick="approveReview(${r.id})"><i class="fas fa-check"></i> Approve</button>
-        <button class="btn-danger btn-sm" onclick="rejectReview(${r.id})"><i class="fas fa-times"></i></button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function renderSettings() {
-  const data = loadAll();
-  const s = data.settings;
-  document.getElementById('s_whatsapp').value = s.whatsapp || '';
-  document.getElementById('s_phone1').value = s.phone1 || '';
-  document.getElementById('s_phone2').value = s.phone2 || '';
-  document.getElementById('s_email').value = s.email || '';
-  document.getElementById('s_address').value = s.address || '';
-  document.getElementById('s_website').value = s.website || '';
-  document.getElementById('s_instagram').value = s.instagram || '';
-  document.getElementById('s_facebook').value = s.facebook || '';
-  document.getElementById('s_password').value = '';
 }
 
 // ---------- CRUD: Testimonials ----------
@@ -681,7 +689,6 @@ function openAddTestimonial() {
   document.getElementById('modalSub').textContent = 'Add a new client testimonial.';
   document.getElementById('modalForm').innerHTML = `
     <input type="hidden" id="m_id">
-    <input type="hidden" id="m_photo_data">
     <div class="form-group">
       <label>Client Name *</label>
       <input type="text" id="m_name" required placeholder="e.g. Arjun Menon">
@@ -696,13 +703,9 @@ function openAddTestimonial() {
         <input type="number" id="m_rating" min="1" max="5" required>
       </div>
       <div class="form-group">
-        <label>Photo (Upload) *</label>
-        <input type="file" id="m_photo" accept="image/*" onchange="previewImage(event)">
-        <div id="photoPreview" style="margin-top:10px;display:none;">
-          <img id="previewImg" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #0D7C3E;">
-          <br><small style="color:#718096;">Click to change photo</small>
-        </div>
-        <small style="color:#718096;display:block;margin-top:4px;">Supported: PNG, JPG, JPEG, GIF, WebP, SVG</small>
+        <label>Photo URL</label>
+        <input type="url" id="m_photo" placeholder="https://example.com/photo.jpg">
+        <small style="color:#718096;">Enter image URL or leave empty for initials</small>
       </div>
     </div>
     <div class="form-group">
@@ -728,280 +731,177 @@ function openAddTestimonial() {
   document.getElementById('modalOverlay').classList.add('show');
 }
 
-function previewImage(event) {
-  const file = event.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const preview = document.getElementById('previewImg');
-      const previewContainer = document.getElementById('photoPreview');
-      preview.src = e.target.result;
-      previewContainer.style.display = 'block';
-      document.getElementById('m_photo_data').value = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-}
-
-function handleTestimonialSubmit(e) {
+async function handleTestimonialSubmit(e) {
   e.preventDefault();
-  const data = loadAll();
-  const id = parseInt(document.getElementById('m_id').value);
-  
-  let photoData = document.getElementById('m_photo_data').value;
+  const id = document.getElementById('m_id').value;
   
   const entry = {
-    id: id || nextId(data.testimonials),
     name: document.getElementById('m_name').value.trim(),
     destination: document.getElementById('m_dest').value.trim(),
     rating: parseInt(document.getElementById('m_rating').value),
     review: document.getElementById('m_review').value.trim(),
-    photo: photoData || '',
+    photo: document.getElementById('m_photo').value.trim() || '',
     active: document.getElementById('m_active').value === 'true',
-    featured: document.getElementById('m_featured').value === 'true',
-    date: new Date().toISOString().split('T')[0]
+    featured: document.getElementById('m_featured').value === 'true'
   };
+  
   if (!entry.name || !entry.destination || !entry.review || !entry.rating) {
     toast('Please fill all required fields.', true);
     return;
   }
-  if (id) {
-    const idx = data.testimonials.findIndex(t => t.id === id);
-    if (idx > -1) data.testimonials[idx] = entry;
-  } else {
-    data.testimonials.push(entry);
+  
+  try {
+    let result;
+    if (id) {
+      result = await scUpdateTestimonial(parseInt(id), entry);
+    } else {
+      result = await scAddTestimonial(entry);
+    }
+    
+    if (result.success) {
+      toast(id ? 'Testimonial updated successfully!' : 'Testimonial added successfully!');
+      closeModal();
+      refreshAll();
+    } else {
+      toast('Error saving testimonial: ' + (result.error || 'Unknown error'), true);
+    }
+  } catch (error) {
+    toast('Error saving testimonial: ' + error.message, true);
   }
-  saveAll(data);
-  closeModal();
-  refreshAll();
-  toast('Happy client saved successfully!');
 }
 
-function editTestimonial(id) {
-  const data = loadAll();
-  const t = data.testimonials.find(t => t.id === id);
-  if (!t) { toast('Not found!', true); return; }
-  openAddTestimonial();
-  document.getElementById('m_id').value = t.id;
-  document.getElementById('m_name').value = t.name;
-  document.getElementById('m_dest').value = t.destination;
-  document.getElementById('m_rating').value = t.rating;
-  document.getElementById('m_review').value = t.review;
-  document.getElementById('m_photo').value = t.photo || '';
-  document.getElementById('m_featured').value = t.featured ? 'true' : 'false';
-  document.getElementById('m_active').value = t.active ? 'true' : 'false';
-  document.getElementById('modalTitle').textContent = 'Edit Happy Client';
-  document.getElementById('modalSub').textContent = `Editing "${t.name}"`;
+async function editTestimonial(id) {
+  try {
+    const data = await scGetTestimonials();
+    const testimonial = data.find(t => t.id === id);
+    if (!testimonial) { toast('Not found!', true); return; }
+    
+    openAddTestimonial();
+    document.getElementById('m_id').value = testimonial.id;
+    document.getElementById('m_name').value = testimonial.name;
+    document.getElementById('m_dest').value = testimonial.destination;
+    document.getElementById('m_rating').value = testimonial.rating;
+    document.getElementById('m_review').value = testimonial.review;
+    document.getElementById('m_photo').value = testimonial.photo || '';
+    document.getElementById('m_featured').value = testimonial.featured ? 'true' : 'false';
+    document.getElementById('m_active').value = testimonial.active ? 'true' : 'false';
+    document.getElementById('modalTitle').textContent = 'Edit Happy Client';
+    document.getElementById('modalSub').textContent = `Editing "${testimonial.name}"`;
+  } catch (error) {
+    toast('Error loading testimonial: ' + error.message, true);
+  }
 }
 
-function deleteTestimonial(id) {
+async function deleteTestimonial(id) {
   if (!confirm('Delete this testimonial?')) return;
-  const data = loadAll();
-  data.testimonials = data.testimonials.filter(t => t.id !== id);
-  saveAll(data);
-  refreshAll();
-  toast('Testimonial deleted.');
-}
-
-function toggleTestimonial(id) {
-  const data = loadAll();
-  const t = data.testimonials.find(t => t.id === id);
-  if (!t) return;
-  t.active = !t.active;
-  saveAll(data);
-  refreshAll();
-}
-
-// ---------- CRUD: Packages ----------
-function openAddPackage() {
-  document.getElementById('modalTitle').textContent = 'Add Package';
-  document.getElementById('modalSub').textContent = 'Create a new tour package.';
-  document.getElementById('modalForm').innerHTML = `
-    <input type="hidden" id="m_id">
-    <div class="form-group">
-      <label>Package Name *</label>
-      <input type="text" id="m_name" required>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Type *</label>
-        <select id="m_type"><option value="domestic">Domestic</option><option value="international">International</option></select>
-      </div>
-      <div class="form-group">
-        <label>Price (₹) *</label>
-        <input type="number" id="m_price" required>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Nights *</label>
-        <input type="number" id="m_nights" required>
-      </div>
-      <div class="form-group">
-        <label>Days *</label>
-        <input type="number" id="m_days" required>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Badge</label>
-        <input type="text" id="m_badge" placeholder="e.g. Popular">
-      </div>
-      <div class="form-group">
-        <label>Badge Class</label>
-        <select id="m_badgeClass"><option value="">None</option><option value="gold">Gold</option><option value="blue">Blue</option><option value="adventure">Adventure</option></select>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Image URL *</label>
-      <input type="url" id="m_image" required placeholder="https://images.unsplash.com/...">
-    </div>
-    <div class="form-group">
-      <label>Description *</label>
-      <textarea id="m_description" required></textarea>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Featured</label>
-        <select id="m_featured"><option value="true">Yes</option><option value="false">No</option></select>
-      </div>
-      <div class="form-group">
-        <label>Status</label>
-        <select id="m_active"><option value="true">Active</option><option value="false">Inactive</option></select>
-      </div>
-    </div>
-    <div class="form-actions">
-      <button type="submit" class="btn-primary"><i class="fas fa-check"></i> Save Package</button>
-      <button type="button" class="btn-danger" onclick="closeModal()">Cancel</button>
-    </div>
-  `;
-  document.getElementById('modalForm').onsubmit = handlePackageSubmit;
-  document.getElementById('modalOverlay').classList.add('show');
-}
-
-function handlePackageSubmit(e) {
-  e.preventDefault();
-  const data = loadAll();
-  const id = parseInt(document.getElementById('m_id').value);
-  const entry = {
-    id: id || nextId(data.packages),
-    name: document.getElementById('m_name').value.trim(),
-    type: document.getElementById('m_type').value,
-    price: parseInt(document.getElementById('m_price').value),
-    nights: parseInt(document.getElementById('m_nights').value),
-    days: parseInt(document.getElementById('m_days').value),
-    badge: document.getElementById('m_badge').value.trim(),
-    badgeClass: document.getElementById('m_badgeClass').value,
-    image: document.getElementById('m_image').value.trim(),
-    description: document.getElementById('m_description').value.trim(),
-    featured: document.getElementById('m_featured').value === 'true',
-    active: document.getElementById('m_active').value === 'true'
-  };
-  if (!entry.name || !entry.price || !entry.nights || !entry.days || !entry.image || !entry.description) {
-    toast('Please fill all required fields.', true);
-    return;
+  try {
+    const result = await scDeleteTestimonial(id);
+    if (result.success) {
+      toast('Testimonial deleted.');
+      refreshAll();
+    } else {
+      toast('Error deleting testimonial: ' + (result.error || 'Unknown error'), true);
+    }
+  } catch (error) {
+    toast('Error deleting testimonial: ' + error.message, true);
   }
-  if (id) {
-    const idx = data.packages.findIndex(p => p.id === id);
-    if (idx > -1) data.packages[idx] = entry;
-  } else {
-    data.packages.push(entry);
+}
+
+async function toggleTestimonial(id) {
+  try {
+    const result = await scToggleTestimonial(id);
+    if (result.success) {
+      refreshAll();
+    } else {
+      toast('Error toggling testimonial: ' + (result.error || 'Unknown error'), true);
+    }
+  } catch (error) {
+    toast('Error toggling testimonial: ' + error.message, true);
   }
-  saveAll(data);
-  closeModal();
-  refreshAll();
-  toast('Package saved successfully!');
-}
-
-function editPackage(id) {
-  const data = loadAll();
-  const p = data.packages.find(p => p.id === id);
-  if (!p) { toast('Not found!', true); return; }
-  openAddPackage();
-  document.getElementById('m_id').value = p.id;
-  document.getElementById('m_name').value = p.name;
-  document.getElementById('m_type').value = p.type || 'domestic';
-  document.getElementById('m_price').value = p.price;
-  document.getElementById('m_nights').value = p.nights;
-  document.getElementById('m_days').value = p.days;
-  document.getElementById('m_badge').value = p.badge || '';
-  document.getElementById('m_badgeClass').value = p.badgeClass || '';
-  document.getElementById('m_image').value = p.image;
-  document.getElementById('m_description').value = p.description;
-  document.getElementById('m_featured').value = p.featured ? 'true' : 'false';
-  document.getElementById('m_active').value = p.active ? 'true' : 'false';
-  document.getElementById('modalTitle').textContent = 'Edit Package';
-  document.getElementById('modalSub').textContent = `Editing "${p.name}"`;
-}
-
-function deletePackage(id) {
-  if (!confirm('Delete this package?')) return;
-  const data = loadAll();
-  data.packages = data.packages.filter(p => p.id !== id);
-  saveAll(data);
-  refreshAll();
-  toast('Package deleted.');
-}
-
-function togglePackage(id) {
-  const data = loadAll();
-  const p = data.packages.find(p => p.id === id);
-  if (!p) return;
-  p.active = !p.active;
-  saveAll(data);
-  refreshAll();
 }
 
 // ---------- CRUD: Reviews ----------
-function approveReview(id) {
-  const data = loadAll();
-  const idx = data.reviews.findIndex(r => r.id === id);
-  if (idx === -1) { toast('Review not found!', true); return; }
-  const r = data.reviews[idx];
-  data.testimonials.push({
-    id: nextId(data.testimonials),
-    name: r.name,
-    destination: r.destination,
-    rating: r.rating,
-    review: r.review,
-    date: r.date || new Date().toISOString().split('T')[0],
-    active: true,
-    photo: r.photo || '',
-    featured: false
-  });
-  data.reviews.splice(idx, 1);
-  saveAll(data);
-  refreshAll();
-  toast('Review approved! Added to happy clients.');
+async function approveReview(id) {
+  try {
+    const result = await scApproveReview(id);
+    if (result.success) {
+      toast('Review approved! Added to happy clients.');
+      refreshAll();
+    } else {
+      toast('Error approving review: ' + (result.error || 'Unknown error'), true);
+    }
+  } catch (error) {
+    toast('Error approving review: ' + error.message, true);
+  }
 }
 
-function rejectReview(id) {
+async function rejectReview(id) {
   if (!confirm('Reject this review?')) return;
-  const data = loadAll();
-  data.reviews = data.reviews.filter(r => r.id !== id);
-  saveAll(data);
-  refreshAll();
-  toast('Review rejected.');
+  try {
+    const result = await scRejectReview(id);
+    if (result.success) {
+      toast('Review rejected.');
+      refreshAll();
+    } else {
+      toast('Error rejecting review: ' + (result.error || 'Unknown error'), true);
+    }
+  } catch (error) {
+    toast('Error rejecting review: ' + error.message, true);
+  }
 }
 
 // ---------- Settings ----------
-document.getElementById('settingsForm').addEventListener('submit', (e) => {
+document.getElementById('settingsForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const data = loadAll();
-  const s = data.settings;
-  s.whatsapp = document.getElementById('s_whatsapp').value.trim();
-  s.phone1 = document.getElementById('s_phone1').value.trim();
-  s.phone2 = document.getElementById('s_phone2').value.trim();
-  s.email = document.getElementById('s_email').value.trim();
-  s.address = document.getElementById('s_address').value.trim();
-  s.website = document.getElementById('s_website').value.trim();
-  s.instagram = document.getElementById('s_instagram').value.trim();
-  s.facebook = document.getElementById('s_facebook').value.trim();
+  
+  const settings = {
+    whatsapp: document.getElementById('s_whatsapp').value.trim(),
+    phone1: document.getElementById('s_phone1').value.trim(),
+    phone2: document.getElementById('s_phone2').value.trim(),
+    email: document.getElementById('s_email').value.trim(),
+    address: document.getElementById('s_address').value.trim(),
+    website: document.getElementById('s_website').value.trim(),
+    instagram: document.getElementById('s_instagram').value.trim(),
+    facebook: document.getElementById('s_facebook').value.trim()
+  };
+  
   const newPass = document.getElementById('s_password').value.trim();
-  if (newPass) s.adminPassword = newPass;
-  saveAll(data);
-  toast('Settings saved successfully!');
+  if (newPass) settings.adminPassword = newPass;
+  
+  try {
+    const result = await scUpdateSettings(settings);
+    if (result.success) {
+      toast('Settings saved successfully!');
+      if (newPass) {
+        currentAdminPassword = newPass;
+        sessionStorage.setItem('staycape_admin', newPass);
+      }
+    } else {
+      toast('Error saving settings: ' + (result.error || 'Unknown error'), true);
+    }
+  } catch (error) {
+    toast('Error saving settings: ' + error.message, true);
+  }
 });
+
+async function loadSettings() {
+  try {
+    const settings = await scGetSettings();
+    
+    document.getElementById('s_whatsapp').value = settings.whatsapp || '';
+    document.getElementById('s_phone1').value = settings.phone1 || '';
+    document.getElementById('s_phone2').value = settings.phone2 || '';
+    document.getElementById('s_email').value = settings.email || '';
+    document.getElementById('s_address').value = settings.address || '';
+    document.getElementById('s_website').value = settings.website || '';
+    document.getElementById('s_instagram').value = settings.instagram || '';
+    document.getElementById('s_facebook').value = settings.facebook || '';
+    
+    if (settings.adminPassword) currentAdminPassword = settings.adminPassword;
+  } catch (error) {
+    console.error('Error loading settings:', error);
+  }
+}
 
 // ---------- Tabs ----------
 document.querySelectorAll('.tab').forEach(tab => {
@@ -1023,27 +923,23 @@ document.getElementById('modalOverlay').addEventListener('click', (e) => {
 });
 
 // ---------- Refresh ----------
-function refreshAll() {
-  const data = loadAll();
-  renderStats(data);
-  renderTestimonials();
-  renderPackages();
-  renderPendingReviews();
-  renderSettings();
+async function refreshAll() {
+  await renderStats();
+  await renderTestimonials();
+  await renderPackages();
+  await renderPendingReviews();
+  await loadSettings();
+  await scUpdateStats();
 }
 
 // ---------- Init ----------
-function initAdmin() {
-  refreshAll();
+async function initAdmin() {
+  await refreshAll();
 }
 
 // Check auth on load
 document.addEventListener('DOMContentLoaded', () => {
-  if (checkAuth()) {
-    document.getElementById('loginOverlay').style.display = 'none';
-    document.getElementById('adminApp').style.display = 'block';
-    initAdmin();
-  }
+  checkAuth();
 });
 </script>
 </body>

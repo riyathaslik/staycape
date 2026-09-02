@@ -18,8 +18,8 @@
 <!-- ======================== NAVBAR ======================== -->
 <nav class="navbar transparent" id="navbar" role="navigation" aria-label="Main navigation">
   <div class="container">
-    <a class="navbar-logo" href="index.html" aria-label="Staycape Home">
-      <img src="images/logo.png" alt="Staycape Travel Company" id="nav-logo">
+    <a class="navbar-brand" href="index.html" aria-label="Staycape Home">
+      <img src="images/logo.png" alt="Staycape Travel Company" class="brand-logo" style="height:56px; width:auto;">
     </a>
     <div class="navbar-nav" role="menubar">
       <a href="index.html" role="menuitem">Home</a>
@@ -41,6 +41,13 @@
 
 <!-- Mobile Menu -->
 <div class="nav-mobile" id="nav-mobile" role="navigation" aria-label="Mobile navigation">
+  <div class="nav-mobile-brand">
+    <img src="images/logo.png" alt="Staycape Travel Company" class="brand-logo" style="height:48px; width:auto;">
+    <span class="brand-text">
+      <span class="brand-name">Staycape</span>
+      <span class="brand-sub">Travel Company</span>
+    </span>
+  </div>
   <a href="index.html"><i class="fa-solid fa-house"></i> Home</a>
   <a href="about.html"><i class="fa-solid fa-circle-info"></i> About</a>
   <a href="index.html#services"><i class="fa-solid fa-briefcase"></i> Services</a>
@@ -209,8 +216,8 @@
   <div class="container">
     <div class="footer-grid">
       <div>
-        <div class="footer-logo">
-          <img src="images/logo.png" alt="Staycape Travel Company">
+        <div class="footer-brand">
+          <img src="images/logo.png" alt="Staycape Travel Company" class="brand-logo" style="height:56px; width:auto; filter: drop-shadow(0 0 4px rgba(255,255,255,0.5));">
         </div>
         <p class="footer-tagline">Staycape Travel Company — Your trusted travel partner from Kerala. Making journeys memorable since day one.</p>
         <div class="footer-social">
@@ -274,6 +281,8 @@
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
 <script src="js/data.js"></script>
 <script src="js/main.js"></script>
 </body>
