@@ -1,7 +1,7 @@
 // ============================================================
 // STAYCAPE DATA LAYER
-// Supabase for: Testimonials, Reviews, Stats, Settings
-// Local for: Packages, Images
+// Supabase is the PRIMARY source of truth
+// LocalStorage is ONLY for fallback when offline
 // ============================================================
 
 // ============================================================
@@ -82,16 +82,12 @@ function getDestinationImage(destination, type = 'tour') {
 }
 
 // ============================================================
-// LOCAL DATA STORE (Fallback)
+// LOCAL DATA STORE (Fallback ONLY - when offline)
 // ============================================================
 
 const localStore = {
     reviews: [],
-    testimonials: [
-        { id: 1, name: 'Arjun Menon', destination: 'Kashmir Trip', rating: 5, review: 'Absolutely wonderful experience! Staycape planned every detail perfectly. Dal Lake in winter was breathtaking and the shikara ride at sunrise - unforgettable. Will definitely book again!', photo: '', active: true, featured: true, created_at: new Date().toISOString() },
-        { id: 2, name: 'Priya Nair', destination: 'Bali Package', rating: 5, review: 'The Bali trip was a dream come true. From the rice terraces to the temples and beach clubs - everything was perfectly arranged. Thank you Staycape for a flawless experience!', photo: '', active: true, featured: false, created_at: new Date().toISOString() },
-        { id: 3, name: 'Mohammed Rafi', destination: 'Sri Lanka Tour', rating: 5, review: 'Had an amazing experience with Staycape. Everything was arranged perfectly and the trip was completely hassle-free. The team was responsive and professional throughout. Highly recommended!', photo: '', active: true, featured: false, created_at: new Date().toISOString() }
-    ],
+    testimonials: [],
     settings: {
         whatsapp: '919744030890',
         whatsapp2: '919744403045',
@@ -116,7 +112,7 @@ const localStore = {
         { id: 10, name: 'Jaisalmer', type: 'domestic', price: 25000, nights: 3, days: 4, badge: '', badge_class: '', featured: false, active: true, description: 'The Golden City - desert dunes and the magnificent Jaisalmer Fort.' },
         { id: 23, name: 'Hampi', type: 'domestic', price: 20000, nights: 3, days: 4, badge: 'Heritage', badge_class: 'gold', featured: false, active: true, description: 'Ancient UNESCO heritage - boulder landscapes and magnificent temples.' },
         { id: 24, name: 'Goa', type: 'domestic', price: 25000, nights: 3, days: 4, badge: 'Popular', badge_class: 'green', featured: true, active: true, description: 'Sun, sand, and sea - beautiful beaches and Portuguese heritage.' },
-        { id: 18, name: 'Hyderabad', type: 'domestic', price: 28000, nights: 4, days: 5, badge: '', badge_class: '', featured: false, active: true, description: 'The City of Pearls  Charminar, Golconda Fort, and world-famous biryani.' },
+        { id: 18, name: 'Hyderabad', type: 'domestic', price: 28000, nights: 4, days: 5, badge: '', badge_class: '', featured: false, active: true, description: 'The City of Pearls - Charminar, Golconda Fort, and world-famous biryani.' },
         { id: 9, name: 'Lakshadweep', type: 'domestic', price: 18000, nights: 4, days: 5, badge: 'Popular', badge_class: 'green', featured: true, active: true, description: 'India\'s hidden paradise - crystal lagoons and vibrant coral reefs.' },
         { id: 11, name: 'Agra & Delhi', type: 'domestic', price: 18000, nights: 3, days: 4, badge: '', badge_class: '', featured: false, active: true, description: 'The timeless Taj Mahal and the historic grandeur of India\'s capital.' },
         { id: 16, name: 'Meghalaya', type: 'domestic', price: 25000, nights: 3, days: 4, badge: '', badge_class: '', featured: false, active: true, description: 'The Abode of Clouds - living root bridges and thundering waterfalls.' },
@@ -130,11 +126,11 @@ const localStore = {
         { id: 8, name: 'Azerbaijan', type: 'international', price: 88000, nights: 4, days: 5, badge: 'Unique', badge_class: 'blue', featured: false, active: true, description: 'The Land of Fire - Baku\'s flame towers, old city, and unique mud volcanoes.' },
         { id: 25, name: 'Africa', type: 'international', price: 210000, nights: 5, days: 6, badge: 'Safari', badge_class: 'gold', featured: false, active: true, description: 'The wild heart of Africa - majestic savannas and breathtaking landscapes.' }
     ],
-    stats: { happy_travellers: 131, destinations: 24, services_offered: 10, avg_rating: 5.0 }
+    stats: { happy_travellers: 0, destinations: 0, services_offered: 10, avg_rating: 5.0 }
 };
 
 // ============================================================
-// LOCAL STORAGE FUNCTIONS
+// LOCAL STORAGE FUNCTIONS (Fallback ONLY)
 // ============================================================
 
 function saveToStorage() {
@@ -146,7 +142,7 @@ function saveToStorage() {
             stats: localStore.stats
         };
         localStorage.setItem('staycape_data', JSON.stringify(dataToSave));
-        console.log('💾 Data saved to localStorage');
+        console.log('💾 Data saved to localStorage (fallback)');
     } catch (error) {
         console.warn('⚠️ Could not save Staycape data:', error);
     }
@@ -161,7 +157,7 @@ function loadFromStorage() {
         if (Array.isArray(data.testimonials)) localStore.testimonials = data.testimonials;
         if (data.settings) localStore.settings = { ...localStore.settings, ...data.settings };
         if (data.stats) localStore.stats = { ...localStore.stats, ...data.stats };
-        console.log('✅ Data loaded from localStorage');
+        console.log('✅ Data loaded from localStorage (fallback)');
         return true;
     } catch (error) {
         console.warn('⚠️ Could not load Staycape data:', error);
@@ -235,32 +231,68 @@ async function scGetExploreDestinations() {
 }
 
 // ============================================================
-// TESTIMONIALS - LOCAL STORAGE IS PRIMARY
+// TESTIMONIALS - SUPABASE IS PRIMARY
 // ============================================================
 
 async function scGetTestimonials() {
+    console.log('📥 Fetching testimonials from Supabase...');
+    
     try {
-        // Always return local data first
-        const localData = localStore.testimonials;
-        
-        // Try to sync/merge with Supabase in background
-        if (supabaseClient) {
-            try {
-                const { data, error } = await supabaseClient
+        if (!supabaseClient) {
+            console.warn('⚠️ Supabase not available, using localStorage');
+            return localStore.testimonials;
+        }
+
+        const { data, error } = await supabaseClient
+            .from('testimonials')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('❌ Supabase error:', error);
+            // Fallback to local
+            return localStore.testimonials;
+        }
+
+        if (data && data.length > 0) {
+            console.log('✅ Loaded', data.length, 'testimonials from Supabase');
+            // Update local cache
+            localStore.testimonials = data;
+            saveToStorage();
+            return data;
+        } else {
+            console.log('ℹ️ No testimonials in Supabase, checking local...');
+            // If Supabase has no data but local has, seed Supabase with local data
+            if (localStore.testimonials.length > 0) {
+                console.log('📤 Seeding Supabase with local testimonials...');
+                for (const t of localStore.testimonials) {
+                    try {
+                        await supabaseClient.from('testimonials').insert([{
+                            name: t.name,
+                            destination: t.destination,
+                            rating: t.rating,
+                            review: t.review,
+                            photo: t.photo || '',
+                            active: t.active !== undefined ? t.active : true,
+                            featured: t.featured || false
+                        }]);
+                    } catch (e) {
+                        console.warn('⚠️ Could not seed testimonial:', e.message);
+                    }
+                }
+                // Reload from Supabase
+                const { data: newData } = await supabaseClient
                     .from('testimonials')
                     .select('*')
                     .order('created_at', { ascending: false });
-                
-                if (!error && data && data.length > 0) {
-                    // Merge: Keep local data as primary, but ensure Supabase has all local entries
-                    console.log('📥 Synced with Supabase, found', data.length, 'records');
-                    return localData;
+                if (newData) {
+                    localStore.testimonials = newData;
+                    saveToStorage();
+                    return newData;
                 }
-            } catch (syncError) {
-                console.warn('⚠️ Could not sync with Supabase, using local data');
             }
+            return localStore.testimonials;
         }
-        return localData;
     } catch (error) {
         console.warn('⚠️ Error fetching testimonials, using local:', error.message);
         return localStore.testimonials;
@@ -268,156 +300,212 @@ async function scGetTestimonials() {
 }
 
 async function scAddTestimonial(testimonialData) {
-    console.log('📤 Adding testimonial...', testimonialData);
+    console.log('📤 Adding testimonial to Supabase...', testimonialData);
 
-    // ALWAYS save to local storage first (immediate)
-    const newItem = {
-        ...testimonialData,
-        id: getNextId(localStore.testimonials),
-        created_at: new Date().toISOString()
-    };
-    localStore.testimonials.push(newItem);
-    saveToStorage();
-    console.log('💾 Testimonial saved to localStorage with ID:', newItem.id);
-
-    // Then try to sync to Supabase
-    let supabaseSuccess = false;
-    if (supabaseClient) {
-        try {
-            const { data, error } = await supabaseClient
-                .from('testimonials')
-                .insert([{
-                    name: testimonialData.name,
-                    destination: testimonialData.destination,
-                    rating: testimonialData.rating,
-                    review: testimonialData.review,
-                    photo: testimonialData.photo || '',
-                    active: testimonialData.active !== undefined ? testimonialData.active : true,
-                    featured: testimonialData.featured || false
-                }])
-                .select();
-
-            if (error) {
-                console.warn('⚠️ Supabase insert failed:', error.message);
-            } else {
-                supabaseSuccess = true;
-                console.log('✅ Testimonial synced to Supabase successfully:', data);
-                // Update local item with Supabase ID
-                if (data && data[0]) {
-                    const idx = localStore.testimonials.findIndex(t => t.id === newItem.id);
-                    if (idx > -1) {
-                        localStore.testimonials[idx].id = data[0].id;
-                        localStore.testimonials[idx]._supabase_id = data[0].id;
-                        saveToStorage();
-                    }
-                }
-            }
-        } catch (syncError) {
-            console.warn('⚠️ Supabase sync failed, data saved locally only:', syncError.message);
+    // First, try Supabase
+    try {
+        if (!supabaseClient) {
+            throw new Error('Supabase not available');
         }
+
+        const { data, error } = await supabaseClient
+            .from('testimonials')
+            .insert([{
+                name: testimonialData.name,
+                destination: testimonialData.destination,
+                rating: testimonialData.rating,
+                review: testimonialData.review,
+                photo: testimonialData.photo || '',
+                active: testimonialData.active !== undefined ? testimonialData.active : true,
+                featured: testimonialData.featured || false
+            }])
+            .select();
+
+        if (error) {
+            console.error('❌ Supabase insert error:', error);
+            throw error;
+        }
+
+        console.log('✅ Testimonial saved to Supabase successfully:', data);
+        
+        // Update local cache
+        if (data && data[0]) {
+            localStore.testimonials.unshift(data[0]);
+            saveToStorage();
+        }
+
+        // Update stats
+        await scUpdateStats();
+
+        return { success: true, data: data[0], source: 'supabase' };
+
+    } catch (error) {
+        console.warn('⚠️ Supabase error, saving to localStorage only:', error.message);
+        
+        // Fallback to local storage
+        const newItem = {
+            ...testimonialData,
+            id: getNextId(localStore.testimonials),
+            created_at: new Date().toISOString()
+        };
+        localStore.testimonials.unshift(newItem);
+        saveToStorage();
+
+        // Update stats
+        await scUpdateStats();
+
+        return { success: true, data: newItem, source: 'local' };
     }
-
-    // Update stats
-    await scUpdateStats();
-
-    return { success: true, data: newItem, supabaseSynced: supabaseSuccess };
 }
 
 async function scUpdateTestimonial(id, testimonialData) {
-    console.log('📤 Updating testimonial...', id);
+    console.log('📤 Updating testimonial in Supabase...', id);
 
-    // Update local storage first
-    const idx = localStore.testimonials.findIndex(t => t.id === id);
-    if (idx === -1) {
-        // Try finding by _supabase_id
-        const idx2 = localStore.testimonials.findIndex(t => t._supabase_id === id);
-        if (idx2 > -1) {
-            localStore.testimonials[idx2] = { ...localStore.testimonials[idx2], ...testimonialData };
+    try {
+        if (!supabaseClient) {
+            throw new Error('Supabase not available');
+        }
+
+        const { data, error } = await supabaseClient
+            .from('testimonials')
+            .update(testimonialData)
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            console.error('❌ Supabase update error:', error);
+            throw error;
+        }
+
+        console.log('✅ Testimonial updated in Supabase successfully:', data);
+        
+        // Update local cache
+        if (data && data[0]) {
+            const idx = localStore.testimonials.findIndex(t => t.id === id);
+            if (idx > -1) {
+                localStore.testimonials[idx] = data[0];
+                saveToStorage();
+            }
+        }
+
+        await scUpdateStats();
+        return { success: true, data: data[0] };
+
+    } catch (error) {
+        console.warn('⚠️ Supabase error, updating localStorage only:', error.message);
+        
+        const idx = localStore.testimonials.findIndex(t => t.id === id);
+        if (idx > -1) {
+            localStore.testimonials[idx] = { ...localStore.testimonials[idx], ...testimonialData };
             saveToStorage();
-        } else {
-            return { success: false, error: 'Testimonial not found' };
+            await scUpdateStats();
+            return { success: true, data: localStore.testimonials[idx] };
         }
-    } else {
-        localStore.testimonials[idx] = { ...localStore.testimonials[idx], ...testimonialData };
-        saveToStorage();
+        return { success: false, error: 'Testimonial not found' };
     }
-
-    // Try to sync to Supabase
-    if (supabaseClient) {
-        try {
-            const { error } = await supabaseClient
-                .from('testimonials')
-                .update(testimonialData)
-                .eq('id', id);
-            if (error) console.warn('⚠️ Supabase update failed:', error.message);
-            else console.log('✅ Testimonial updated in Supabase');
-        } catch (syncError) {
-            console.warn('⚠️ Supabase sync failed:', syncError.message);
-        }
-    }
-
-    await scUpdateStats();
-    return { success: true };
 }
 
 async function scDeleteTestimonial(id) {
-    console.log('🗑️ Deleting testimonial...', id);
+    console.log('🗑️ Deleting testimonial from Supabase...', id);
 
-    // Delete from local storage
-    const idx = localStore.testimonials.findIndex(t => t.id === id);
-    if (idx > -1) {
-        localStore.testimonials.splice(idx, 1);
-        saveToStorage();
-    } else {
+    try {
+        if (!supabaseClient) {
+            throw new Error('Supabase not available');
+        }
+
+        const { error } = await supabaseClient
+            .from('testimonials')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('❌ Supabase delete error:', error);
+            throw error;
+        }
+
+        console.log('✅ Testimonial deleted from Supabase');
+        
+        // Update local cache
+        const idx = localStore.testimonials.findIndex(t => t.id === id);
+        if (idx > -1) {
+            localStore.testimonials.splice(idx, 1);
+            saveToStorage();
+        }
+
+        await scUpdateStats();
+        return { success: true };
+
+    } catch (error) {
+        console.warn('⚠️ Supabase error, deleting from localStorage only:', error.message);
+        
+        const idx = localStore.testimonials.findIndex(t => t.id === id);
+        if (idx > -1) {
+            localStore.testimonials.splice(idx, 1);
+            saveToStorage();
+            await scUpdateStats();
+            return { success: true };
+        }
         return { success: false, error: 'Testimonial not found' };
     }
-
-    // Try to delete from Supabase
-    if (supabaseClient) {
-        try {
-            const { error } = await supabaseClient
-                .from('testimonials')
-                .delete()
-                .eq('id', id);
-            if (error) console.warn('⚠️ Supabase delete failed:', error.message);
-            else console.log('✅ Testimonial deleted from Supabase');
-        } catch (syncError) {
-            console.warn('⚠️ Supabase sync failed:', syncError.message);
-        }
-    }
-
-    await scUpdateStats();
-    return { success: true };
 }
 
 async function scToggleTestimonial(id) {
-    console.log('🔄 Toggling testimonial...', id);
+    console.log('🔄 Toggling testimonial in Supabase...', id);
 
-    // Toggle local storage
-    const idx = localStore.testimonials.findIndex(t => t.id === id);
-    if (idx > -1) {
-        localStore.testimonials[idx].active = !localStore.testimonials[idx].active;
-        saveToStorage();
-    } else {
+    try {
+        if (!supabaseClient) {
+            throw new Error('Supabase not available');
+        }
+
+        // Get current state
+        const { data: current, error: fetchError } = await supabaseClient
+            .from('testimonials')
+            .select('active')
+            .eq('id', id)
+            .single();
+
+        if (fetchError) {
+            console.error('❌ Supabase fetch error:', fetchError);
+            throw fetchError;
+        }
+
+        const { data, error } = await supabaseClient
+            .from('testimonials')
+            .update({ active: !current.active })
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            console.error('❌ Supabase toggle error:', error);
+            throw error;
+        }
+
+        console.log('✅ Testimonial toggled in Supabase');
+        
+        // Update local cache
+        if (data && data[0]) {
+            const idx = localStore.testimonials.findIndex(t => t.id === id);
+            if (idx > -1) {
+                localStore.testimonials[idx] = data[0];
+                saveToStorage();
+            }
+        }
+
+        await scUpdateStats();
+        return { success: true, data: data[0] };
+
+    } catch (error) {
+        console.warn('⚠️ Supabase error, toggling localStorage only:', error.message);
+        
+        const idx = localStore.testimonials.findIndex(t => t.id === id);
+        if (idx > -1) {
+            localStore.testimonials[idx].active = !localStore.testimonials[idx].active;
+            saveToStorage();
+            await scUpdateStats();
+            return { success: true };
+        }
         return { success: false, error: 'Testimonial not found' };
     }
-
-    // Try to sync to Supabase
-    if (supabaseClient) {
-        try {
-            const { error } = await supabaseClient
-                .from('testimonials')
-                .update({ active: localStore.testimonials[idx].active })
-                .eq('id', id);
-            if (error) console.warn('⚠️ Supabase toggle failed:', error.message);
-            else console.log('✅ Testimonial toggled in Supabase');
-        } catch (syncError) {
-            console.warn('⚠️ Supabase sync failed:', syncError.message);
-        }
-    }
-
-    await scUpdateStats();
-    return { success: true };
 }
 
 // ============================================================
@@ -565,6 +653,7 @@ async function scUpdateStats() {
         if (!supabaseClient) throw new Error('Supabase not available');
         const { error } = await supabaseClient.from('stats').update(stats).eq('id', 1);
         if (error) throw error;
+        console.log('✅ Stats updated in Supabase');
         return { success: true };
     } catch (error) {
         console.warn('⚠️ Supabase error, using local fallback:', error.message);
@@ -605,5 +694,5 @@ window.scFormatPrice = scFormatPrice;
 window.getDestinationImage = getDestinationImage;
 
 console.log('✅ STAYCAPE DATA LAYER INITIALIZED');
-console.log('📡 Supabase status:', supabaseClient ? '✅ Connected' : '❌ Not connected (using localStorage)');
-console.log('💾 Local storage for: Settings, Testimonials, Reviews, Stats');
+console.log('📡 Supabase status:', supabaseClient ? '✅ Connected (Primary Source)' : '❌ Not connected (using localStorage)');
+console.log('📦 Packages:', localStore.packages.length);

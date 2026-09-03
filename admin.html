@@ -53,6 +53,26 @@
       transition: 0.3s;
     }
     .login-box button:hover { background: #0A5F2F; }
+    .login-box .error-msg {
+      color: #dc2626;
+      font-size: 0.85rem;
+      margin-top: 12px;
+      display: none;
+    }
+    .login-box .loading-spinner {
+      display: none;
+      text-align: center;
+      margin-top: 12px;
+    }
+    .login-box .loading-spinner i {
+      font-size: 1.5rem;
+      color: #0D7C3E;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
     .admin-header {
       background: #0D7C3E;
@@ -326,7 +346,9 @@
     <p>Enter password to manage Staycape</p>
     <form id="loginForm">
       <input type="password" id="adminPass" placeholder="Enter password" required>
-      <button type="submit">Login</button>
+      <button type="submit" id="loginBtn">Login</button>
+      <div class="error-msg" id="loginError">Incorrect password. Please try again.</div>
+      <div class="loading-spinner" id="loginSpinner"><i class="fas fa-spinner"></i></div>
     </form>
   </div>
 </div>
@@ -339,7 +361,6 @@
       <a class="brand-wrap" href="index.html">
         <img src="images/logo.png" alt="Staycape Travel Company" class="brand-logo">
         <span class="brand-text">
-          
           <span class="brand-name">Admin Panel</span>
         </span>
       </a>
@@ -430,53 +451,55 @@
       </div>
     </div>
 
-<!-- Settings Panel -->
-<div class="panel" id="panel-settings">
-  <form id="settingsForm">
-    <div class="form-row">
-      <div class="form-group">
-        <label>WhatsApp Number</label>
-        <input type="text" id="s_whatsapp" placeholder="919744030890" value="919744030890">
-      </div>
-      <div class="form-group">
-        <label>Phone 1</label>
-        <input type="text" id="s_phone1" placeholder="+91 9744 030 890" value="+91 9744 030 890">
-      </div>
+    <!-- Settings Panel -->
+    <div class="panel" id="panel-settings">
+      <form id="settingsForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>WhatsApp Number</label>
+            <input type="text" id="s_whatsapp" placeholder="919744030890" value="919744030890">
+          </div>
+          <div class="form-group">
+            <label>Phone 1</label>
+            <input type="text" id="s_phone1" placeholder="+91 9744 030 890" value="+91 9744 030 890">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Phone 2</label>
+            <input type="text" id="s_phone2" placeholder="+91 9744 403 045" value="+91 9744 403 045">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="s_email" placeholder="staycapes@gmail.com" value="staycapes@gmail.com">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Address</label>
+          <input type="text" id="s_address" placeholder="Kondotty, Kerala" value="Kondotty, Kerala">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Website</label>
+            <input type="text" id="s_website" placeholder="staycape.in" value="staycape.in">
+          </div>
+          <div class="form-group">
+            <label>Instagram URL</label>
+            <input type="text" id="s_instagram" placeholder="https://instagram.com/..." value="https://www.instagram.com/staycape_">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Facebook URL</label>
+          <input type="text" id="s_facebook" placeholder="https://facebook.com/...">
+        </div>
+        <div class="form-group">
+          <label>New Admin Password (leave blank to keep current)</label>
+          <input type="text" id="s_password" placeholder="Enter new password">
+        </div>
+        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Save Settings</button>
+      </form>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Phone 2</label>
-        <input type="text" id="s_phone2" placeholder="+91 9744 403 045" value="+91 9744 403 045">
-      </div>
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="s_email" placeholder="staycapes@gmail.com" value="staycapes@gmail.com">
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Address</label>
-      <input type="text" id="s_address" placeholder="Kondotty, Kerala" value="Kondotty, Kerala">
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Website</label>
-        <input type="text" id="s_website" placeholder="staycape.in" value="staycape.in">
-      </div>
-      <div class="form-group">
-        <label>Instagram URL</label>
-        <input type="text" id="s_instagram" placeholder="https://instagram.com/..." value="https://www.instagram.com/staycape_">
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Facebook URL</label>
-      <input type="text" id="s_facebook" placeholder="https://facebook.com/...">
-    </div>
-    <div class="form-group">
-      <label>New Admin Password (leave blank to keep current)</label>
-      <input type="text" id="s_password" placeholder="Enter new password">
-    </div>
-    <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Save Settings</button>
-  </form>
+  </div>
 </div>
 
 <!-- Modal -->
@@ -518,9 +541,20 @@ function checkAuth() {
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  
   const input = document.getElementById('adminPass').value;
+  const loginBtn = document.getElementById('loginBtn');
+  const loginSpinner = document.getElementById('loginSpinner');
+  const loginError = document.getElementById('loginError');
+  
+  // Show loading
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Checking...';
+  loginSpinner.style.display = 'block';
+  loginError.style.display = 'none';
   
   try {
+    // First try to get settings from Supabase
     const settings = await scGetSettings();
     const pass = settings.adminPassword || 'Staycape@2024';
     currentAdminPassword = pass;
@@ -531,10 +565,13 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       document.getElementById('adminApp').style.display = 'block';
       initAdmin();
     } else {
-      toast('Incorrect password!', true);
+      loginError.style.display = 'block';
+      document.getElementById('adminPass').value = '';
+      document.getElementById('adminPass').focus();
     }
   } catch (error) {
-    toast('Error connecting to database. Using default password.', true);
+    console.error('Login error:', error);
+    // Try default password as fallback
     const pass = 'Staycape@2024';
     if (input === pass) {
       sessionStorage.setItem('staycape_admin', pass);
@@ -542,9 +579,16 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       document.getElementById('adminApp').style.display = 'block';
       initAdmin();
     } else {
-      toast('Incorrect password!', true);
+      loginError.style.display = 'block';
+      document.getElementById('adminPass').value = '';
+      document.getElementById('adminPass').focus();
     }
   }
+  
+  // Hide loading
+  loginBtn.disabled = false;
+  loginBtn.textContent = 'Login';
+  loginSpinner.style.display = 'none';
 });
 
 function logout() {
@@ -865,13 +909,16 @@ document.getElementById('settingsForm').addEventListener('submit', async (e) => 
     adminPassword: document.getElementById('s_password').value.trim()
   };
   
-  // Remove empty password so it doesn't overwrite with empty string
   if (!settings.adminPassword) delete settings.adminPassword;
   
   try {
     const result = await scUpdateSettings(settings);
     if (result.success) {
       toast('Settings saved successfully!');
+      if (settings.adminPassword) {
+        currentAdminPassword = settings.adminPassword;
+        sessionStorage.setItem('staycape_admin', currentAdminPassword);
+      }
     } else {
       toast('Error saving settings: ' + (result.error || 'Unknown error'), true);
     }
@@ -884,13 +931,13 @@ async function loadSettings() {
   try {
     const settings = await scGetSettings();
     
-    document.getElementById('s_whatsapp').value = settings.whatsapp || '';
-    document.getElementById('s_phone1').value = settings.phone1 || '';
-    document.getElementById('s_phone2').value = settings.phone2 || '';
-    document.getElementById('s_email').value = settings.email || '';
-    document.getElementById('s_address').value = settings.address || '';
-    document.getElementById('s_website').value = settings.website || '';
-    document.getElementById('s_instagram').value = settings.instagram || '';
+    document.getElementById('s_whatsapp').value = settings.whatsapp || '919744030890';
+    document.getElementById('s_phone1').value = settings.phone1 || '+91 9744 030 890';
+    document.getElementById('s_phone2').value = settings.phone2 || '+91 9744 403 045';
+    document.getElementById('s_email').value = settings.email || 'staycapes@gmail.com';
+    document.getElementById('s_address').value = settings.address || 'Kondotty, Kerala';
+    document.getElementById('s_website').value = settings.website || 'staycape.in';
+    document.getElementById('s_instagram').value = settings.instagram || 'https://www.instagram.com/staycape_';
     document.getElementById('s_facebook').value = settings.facebook || '';
     
     if (settings.adminPassword) currentAdminPassword = settings.adminPassword;
