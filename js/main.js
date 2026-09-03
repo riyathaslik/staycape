@@ -1,6 +1,22 @@
 // ============================================================
 // STAYCAPE TRAVEL COMPANY — Main JavaScript
 // ============================================================
+// ============================================================
+// FORCE IMAGE REFRESH ON LOAD
+// ============================================================
+function refreshAllImages() {
+    document.querySelectorAll('img').forEach(img => {
+        const src = img.src;
+        if (src && !src.includes('logo') && !src.includes('favicon')) {
+            const separator = src.includes('?') ? '&' : '?';
+            img.src = src + separator + '_refresh=' + Date.now();
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(refreshAllImages, 1000);
+});
 
 // ======================== Navbar ========================
 function initNavbar() {
@@ -89,12 +105,19 @@ async function initPackages() {
     );
     const waLink = `https://wa.me/${settings.whatsapp || '917034378660'}?text=${waMsg}`;
 
+    const imageSrc = pkg.image || `images/destinations/placeholder.jpg`;
+    const altText = pkg.imageAlt || `${pkg.name} travel destination`;
+
     return `
       <div class="pkg-card reveal">
         <div class="pkg-img">
-          <img src="${pkg.image}" alt="${pkg.name} travel package" loading="lazy"
-               onerror="this.src='https://images.unsplash.com/photo-1488085061387-422e29b40080?w=600&h=400&fit=crop'">
-          ${pkg.badge ? `<span class="pkg-badge ${getBadgeClass(pkg.badgeClass)}">${pkg.badge}</span>` : ''}
+          <img 
+            src="${imageSrc}" 
+            alt="${altText}" 
+            loading="lazy"
+            onerror="this.onerror=null; this.src='images/destinations/placeholder.jpg';"
+          >
+          ${pkg.badge ? `<span class="pkg-badge ${getBadgeClass(pkg.badge_class)}">${pkg.badge}</span>` : ''}
         </div>
         <div class="pkg-body">
           <h3 class="pkg-title">${pkg.name}</h3>
@@ -118,13 +141,19 @@ async function initPackages() {
   }
 
   function render(filter) {
+    grid.innerHTML = '';
+    
     let filtered = filter === 'all' ? activePkgs
       : filter === 'featured' ? activePkgs.filter(p => p.featured)
       : activePkgs.filter(p => p.type === filter);
 
-    grid.innerHTML = filtered.length
-      ? filtered.map(buildCard).join('')
-      : '<p style="grid-column:1/-1;text-align:center;color:#718096;padding:48px">No packages found.</p>';
+    if (filtered.length === 0) {
+      grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#718096;padding:48px">No packages found.</p>';
+    } else {
+      const cardsHtml = filtered.map(buildCard).join('');
+      grid.innerHTML = cardsHtml;
+    }
+    
     initScrollAnim();
   }
 
@@ -136,38 +165,47 @@ async function initPackages() {
       render(currentFilter);
     });
   });
+  
   render('all');
 }
 
 // ======================== Destination Showcase ========================
-function initDestinations() {
-  const track = document.querySelector('.dest-track');
-  if (!track) return;
+async function initDestinations() {
+    const track = document.querySelector('.dest-track');
+    if (!track) return;
 
-  const dests = [
-    { name: 'Sri Lanka',  img: 'https://images.unsplash.com/photo-1580181692722-b0ced30b1970?w=400&h=550&fit=crop&q=80' },
-    { name: 'Malaysia',   img: 'https://images.unsplash.com/photo-1596422405526-9c8a89e24b83?w=400&h=550&fit=crop&q=80' },
-    { name: 'Thailand',   img: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=400&h=550&fit=crop&q=80' },
-    { name: 'Bali',       img: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400&h=550&fit=crop&q=80' },
-    { name: 'Vietnam',    img: 'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=400&h=550&fit=crop&q=80' },
-    { name: 'Japan',      img: 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=400&h=550&fit=crop&q=80' },
-    { name: 'Kashmir',    img: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=400&h=550&fit=crop&q=80' },
-    { name: 'Manali',     img: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=550&fit=crop&q=80' },
-    { name: 'Munnar',     img: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&h=550&fit=crop&q=80' },
-    { name: 'Goa',        img: 'https://images.unsplash.com/photo-1512343479164-96a54c0e5a21?w=400&h=550&fit=crop&q=80' },
-    { name: 'Africa',     img: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=400&h=550&fit=crop&q=80' },
-  ];
+    try {
+        const exploreData = await scGetExploreDestinations();
+        
+        const dests = exploreData.map(d => ({
+            name: d.name,
+            img: d.image,
+            alt: d.alt || `Explore ${d.name} destination`
+        }));
 
-  const all = [...dests, ...dests];
-  track.innerHTML = all.map(d => `
-    <div class="dest-card">
-      <img src="${d.img}" alt="${d.name}" loading="lazy"
-           onerror="this.src='https://images.unsplash.com/photo-1488085061387-422e29b40080?w=400&h=550&fit=crop'">
-      <div class="dest-overlay">
-        <span class="dest-name">${d.name}</span>
-      </div>
-    </div>`
-  ).join('');
+        const all = [...dests, ...dests];
+
+        track.innerHTML = '';
+
+        const cardsHtml = all.map(d => `
+            <div class="dest-card">
+                <img
+                    src="${d.img}"
+                    alt="${d.alt}"
+                    loading="lazy"
+                    onerror="this.onerror=null; this.src='images/destinations/placeholder.jpg';"
+                >
+                <div class="dest-overlay">
+                    <span class="dest-name">${d.name}</span>
+                </div>
+            </div>
+        `).join('');
+        
+        track.innerHTML = cardsHtml;
+
+    } catch (error) {
+        console.error('❌ Could not load destinations:', error);
+    }
 }
 
 // ======================== Testimonials Carousel ========================
@@ -378,7 +416,6 @@ async function updateStats() {
         animateRating('statRating', avgRating);
     } catch (error) {
         console.error('Error updating stats:', error);
-        // Fallback values
         animateNumber('statTravellers', 131);
         animateNumber('statDestinations', 10);
         animateNumber('statServices', 10);
@@ -444,11 +481,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   initNavbar();
   initScrollAnim();
   await initPackages();
-  initDestinations();
+  await initDestinations();
   await initTestimonials();
   initReviewForm();
   await injectSettings();
   initSmoothScroll();
   await updateStats();
-  await scUpdateStats(); // Update stats if needed
+  await scUpdateStats();
 });

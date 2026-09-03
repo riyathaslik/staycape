@@ -1,0 +1,40 @@
+images/
+├── logo.png
+├── destinations/
+│   ├── munnar.jpg
+│   ├── alappuzha.jpg
+│   ├── vagamon.jpg
+│   ├── ramakkalmedu.jpg
+│   ├── wayanad.jpg
+│   ├── kashmir.jpg
+│   ├── manali.jpg
+│   ├── kasol.jpg
+│   ├── spiti-valley.jpg
+│   ├── shimla.jpg
+│   ├── jaisalmer.jpg
+│   ├── jaipur.jpg
+│   ├── udaipur.jpg
+│   ├── hampi.jpg
+│   ├── goa.jpg
+│   ├── pondicherry.jpg
+│   ├── hyderabad.jpg
+│   ├── kodaikanal.jpg
+│   ├── lakshadweep.jpg
+│   ├── andaman.jpg
+│   ├── agra-delhi.jpg
+│   ├── meghalaya.jpg
+│   ├── sri-lanka.jpg
+│   ├── malaysia.jpg
+│   ├── thailand.jpg
+│   ├── bali.jpg
+│   ├── vietnam.jpg
+│   ├── japan.jpg
+│   ├── kenya.jpg
+│   ├── azerbaijan.jpg
+│   ├── africa.jpg
+│   ├── dubai.jpg
+│   ├── singapore.jpg
+│   ├── why-choose.jpg
+│   ├── about-travel.jpg
+│   ├── about-planning.jpg
+│   └── placeholder.jpg
