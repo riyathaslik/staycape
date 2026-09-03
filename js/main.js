@@ -1,5 +1,5 @@
 // ============================================================
-// STAYCAPE TRAVEL COMPANY — Main JavaScript
+// STAYCAPE TRAVEL COMPANY - Main JavaScript
 // ============================================================
 // ============================================================
 // FORCE IMAGE REFRESH ON LOAD
@@ -261,7 +261,7 @@ async function initTestimonials() {
   }
 
   function startAuto() { autoTimer = setInterval(() => goTo(current + 1), 5500); }
-  function stopAuto()  { clearInterval(autoTimer); }
+  function stopAuto() { clearInterval(autoTimer); }
 
   if (prevBtn) prevBtn.addEventListener('click', () => { stopAuto(); goTo(current - 1); startAuto(); });
   if (nextBtn) nextBtn.addEventListener('click', () => { stopAuto(); goTo(current + 1); startAuto(); });
@@ -279,7 +279,6 @@ async function initTestimonials() {
 
   startAuto();
 }
-
 // ======================== Review Form ========================
 function initReviewForm() {
   const form = document.getElementById('review-form');
