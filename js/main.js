@@ -59,12 +59,20 @@ function initNavbar() {
     });
   }
 
+  // Fix active state detection - handle both / and index.html
   const path = window.location.pathname;
   document.querySelectorAll('.navbar-nav a, .nav-mobile a[href]').forEach(a => {
     const href = a.getAttribute('href');
-    if (href === 'index.html' && (path.endsWith('index.html') || path === '/' || path.endsWith('stayc/'))) {
-      a.classList.add('active');
+    // Check if it's a home link
+    if (href === '/' || href === 'index.html') {
+      // If we're on the root path or index.html, mark as active
+      if (path === '/' || path === '/index.html' || path.endsWith('/')) {
+        a.classList.add('active');
+      }
     } else if (href === 'about.html' && path.endsWith('about.html')) {
+      a.classList.add('active');
+    } else if (href && href.startsWith('#') && path === '/') {
+      // For anchor links on home page
       a.classList.add('active');
     }
   });
