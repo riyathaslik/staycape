@@ -862,20 +862,17 @@ document.getElementById('settingsForm').addEventListener('submit', async (e) => 
     address: document.getElementById('s_address').value.trim(),
     website: document.getElementById('s_website').value.trim(),
     instagram: document.getElementById('s_instagram').value.trim(),
-    facebook: document.getElementById('s_facebook').value.trim()
+    facebook: document.getElementById('s_facebook').value.trim(),
+    adminPassword: document.getElementById('s_password').value.trim()
   };
   
-  const newPass = document.getElementById('s_password').value.trim();
-  if (newPass) settings.adminPassword = newPass;
+  // Remove empty password so it doesn't overwrite with empty string
+  if (!settings.adminPassword) delete settings.adminPassword;
   
   try {
     const result = await scUpdateSettings(settings);
     if (result.success) {
       toast('Settings saved successfully!');
-      if (newPass) {
-        currentAdminPassword = newPass;
-        sessionStorage.setItem('staycape_admin', newPass);
-      }
     } else {
       toast('Error saving settings: ' + (result.error || 'Unknown error'), true);
     }
