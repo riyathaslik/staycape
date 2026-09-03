@@ -236,18 +236,18 @@ const localStore = {
     ],
 
     // FALLBACK SETTINGS IF SUPABASE IS DOWN
-    settings: {
-        whatsapp: '917034378660',
-        whatsapp2: '919744030890',
-        phone1: '+91 7034 378 660',
-        phone2: '+91 9744 030 890',
-        email: 'staycapes@gmail.com',
-        address: 'Kondotty, Kerala',
-        website: 'staycape.in',
-        instagram: 'https://www.instagram.com/staycape_',
-        facebook: '',
-        adminPassword: 'Staycape@2024'
-    },
+settings: {
+    whatsapp: '919744030890',
+    whatsapp2: '919744403045',
+    phone1: '+91 9744 030 890',
+    phone2: '+91 9744 403 045',
+    email: 'staycapes@gmail.com',
+    address: 'Kondotty, Kerala',
+    website: 'staycape.in',
+    instagram: 'https://www.instagram.com/staycape_',
+    facebook: '',
+    adminPassword: 'Staycape@2024'
+},
 
     packages: [
         { id: 21, name: 'Munnar', type: 'domestic', price: 18000, nights: 3, days: 4, badge: 'Kerala Special', badge_class: 'green', featured: false, active: true, description: 'Rolling tea gardens and breathtaking scenic beauty in Kerala.' },

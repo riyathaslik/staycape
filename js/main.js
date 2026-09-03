@@ -103,7 +103,7 @@ async function initPackages() {
     const waMsg = encodeURIComponent(
       `Hello Staycape,\n\nI am interested in the ${pkg.name} package.\nPrice: ${scFormatPrice(pkg.price)}\nDuration: ${pkg.nights} Nights / ${pkg.days} Days.\n\nPlease share the detailed itinerary and booking information.`
     );
-    const waLink = `https://wa.me/${settings.whatsapp || '917034378660'}?text=${waMsg}`;
+    const waLink = `https://wa.me/${settings.whatsapp || '919744030890'}?text=${waMsg}`;
 
     const imageSrc = pkg.image || `images/destinations/placeholder.jpg`;
     const altText = pkg.imageAlt || `${pkg.name} travel destination`;
@@ -334,10 +334,12 @@ async function injectSettings() {
   const s = await scGetSettings();
 
   document.querySelectorAll('[data-sc-phone1]').forEach(el => { 
-    el.textContent = s.phone1 || '+91 7034 378 660'; 
+    el.textContent = s.phone1 || '+91 9744 030 890'; 
+    el.href = 'tel:' + (s.phone1 || '+919744030890').replace(/[^0-9+]/g, '');
   });
   document.querySelectorAll('[data-sc-phone2]').forEach(el => { 
-    el.textContent = s.phone2 || '+91 9744 030 890'; 
+    el.textContent = s.phone2 || '+91 9744 403 045'; 
+    el.href = 'tel:' + (s.phone2 || '+919744403045').replace(/[^0-9+]/g, '');
   });
   document.querySelectorAll('[data-sc-email]').forEach(el => { 
     el.textContent = s.email || 'staycapes@gmail.com'; 
@@ -348,12 +350,21 @@ async function injectSettings() {
   });
   document.querySelectorAll('[data-sc-website]').forEach(el => { 
     el.textContent = s.website || 'staycape.in'; 
+    el.href = 'https://' + (s.website || 'staycape.in');
   });
 
+  // Use wa.me format for better compatibility (works on all devices including iPhone)
   const msg = encodeURIComponent('Hello Staycape, I am interested in your travel packages. Please share more details.');
-  const wa = s.whatsapp || '917034378660';
+  const wa = s.whatsapp || '919744030890';
+  
+  // Clean the number - remove any +, spaces, dashes
+  const cleanWa = wa.replace(/[^0-9]/g, '');
+  
   document.querySelectorAll('[data-sc-wa]').forEach(el => { 
-    el.href = `https://wa.me/${wa}?text=${msg}`; 
+    el.href = `https://wa.me/${cleanWa}?text=${msg}`;
+    // Ensure it opens in new tab
+    el.setAttribute('target', '_blank');
+    el.setAttribute('rel', 'noopener noreferrer');
   });
 
   if (s.instagram) {
